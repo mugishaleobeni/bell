@@ -1,5 +1,5 @@
 // File: src/components/ProductCard.tsx
-// FIX: Restored the Wishlist (Heart) icon button that was accidentally deleted.
+// FIX: Updated to use the useFavorites context hook for real-time wishlist state and actions.
 
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext'; 
 import { useAuth } from '@/contexts/AuthContext'; 
 import { useToast } from '@/hooks/use-toast'; 
+// 🛑 NEW: Import the Favorites Context hook
+import { useFavorites } from '@/contexts/FavoriteContext'; 
 
 interface ProductCardProps {
   id: string;
@@ -20,12 +22,13 @@ interface ProductCardProps {
   reviewCount: number;
   seller: { name: string; rating: number; };
   badge?: string;
-  isWishlisted?: boolean;
-  onToggleWishlist?: () => void;
+  // 🛑 REMOVED: These props are now handled internally by useFavorites
+  // isWishlisted?: boolean;
+  // onToggleWishlist?: () => void;
   onChatWithSeller?: () => void;
 }
 
-// Helper component to render stars based on fractional rating
+// Helper component to render stars based on fractional rating (unchanged)
 const StarRating = ({ rating, size = 'w-3 h-3' }: { rating: number, size?: string }) => {
   return (
     <div className="flex">
@@ -49,16 +52,41 @@ const StarRating = ({ rating, size = 'w-3 h-3' }: { rating: number, size?: strin
 
 export function ProductCard({
   id, title, price, originalPrice, image, rating, reviewCount, seller, badge, 
-  isWishlisted = false, onToggleWishlist, onChatWithSeller,
+  // 🛑 REMOVED: isWishlisted and onToggleWishlist from destructuring
+  onChatWithSeller,
 }: ProductCardProps) {
 
-  const { addToCart, isLoading } = useCart();
+  const { addToCart, isLoading: isCartLoading } = useCart();
   const { isLoggedIn } = useAuth(); 
   const { toast } = useToast(); 
   
+  // 🛑 NEW: Use the Favorites Context to get status and action
+  const { 
+    toggleFavorite, 
+    isProductFavorited,
+    isLoading: isFavoriteLoading 
+  } = useFavorites();
+  
+  // 🛑 NEW: Get the current favorited status from the context
+  const isWishlisted = isProductFavorited(id);
+  
   const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
   
-  // Handler for Add to Cart with login check
+  // 🛑 NEW: Handler for the Wishlist button
+  const handleToggleFavorite = () => {
+    if (!isLoggedIn) {
+        toast({
+            title: "Login Required",
+            description: "Please log in to save items to your wishlist.",
+            variant: "destructive",
+            duration: 3000,
+        });
+        return;
+    }
+    toggleFavorite(id);
+  };
+  
+  // Handler for Add to Cart with login check (kept as is, but renamed loading variable)
   const handleAddToCart = () => {
       if (!isLoggedIn) {
           toast({
@@ -93,12 +121,10 @@ export function ProductCard({
           </div>
         </Link>
         
-        {/* Black Overlay (unchanged) */}
+        {/* Black Overlay and Badges (unchanged) */}
         <div 
           className="absolute inset-0 rounded-t-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
         />
-
-        {/* Badges (unchanged) */}
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10"> 
           {badge && (
             <Badge className="badge-glass bg-primary/90 text-primary-foreground"> {badge} </Badge>
@@ -108,17 +134,24 @@ export function ProductCard({
           )}
         </div>
 
-        {/* 💖 RESTORED: Wishlist Button 💖 */}
+        {/* 💖 Wishlist Button 💖 */}
         <Button
-          size="icon" variant="glass" onClick={onToggleWishlist}
+          size="icon" 
+          variant="glass" 
+          // 🛑 USE NEW HANDLER
+          onClick={handleToggleFavorite}
+          // 🛑 DISABLE WHILE FAVORITE ACTION IS PENDING
+          disabled={isFavoriteLoading}
           className={`absolute top-2 right-2 h-8 w-8 z-10 ${ 
             isWishlisted ? 'text-destructive' : 'text-black hover:text-destructive' 
           }`}
         >
-          <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
+          <Heart 
+            className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} 
+          />
         </Button>
 
-        {/* Quick Actions (Add to Cart logic remains the same) */}
+        {/* Quick Actions */}
         <div 
             className="absolute inset-x-2 bottom-2 flex gap-2 transition-opacity duration-300 z-50" 
         > 
@@ -127,10 +160,11 @@ export function ProductCard({
             variant="glass-primary"
             className="flex-1"
             onClick={handleAddToCart} 
-            disabled={isLoading} 
+            // 🛑 USE CART LOADING VARIABLE
+            disabled={isCartLoading} 
           >
             <ShoppingCart className="w-4 h-4 mr-1" />
-            {isLoading ? 'Adding...' : 'Add to Cart'} 
+            {isCartLoading ? 'Adding...' : 'Add to Cart'} 
           </Button>
           <Button size="icon" variant="glass" onClick={onChatWithSeller} className="h-8 w-8">
             <MessageCircle className="w-4 h-4" />
