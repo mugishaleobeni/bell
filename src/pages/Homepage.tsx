@@ -2,10 +2,13 @@
 import React, { useState, useEffect, useCallback } from 'react'; 
 import { HeroSection } from '@/components/home/HeroSection';
 import TopPicks from '@/components/home/TopPicks'; 
-// 🛑 IMPORTANT: Use the correct path for ProductCard if it's not '@/components/product/ProductCard'
 import { ProductCard } from '@/components/product/ProductCard'; 
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Zap, TrendingUp, Award, Loader2, Minimize2 } from 'lucide-react';
+// 🛑 ADDED: Heart for the Recommended section heading
+import { ArrowRight, Zap, TrendingUp, Award, Loader2, Minimize2, Heart } from 'lucide-react'; 
+
+// 🌟 NEW: Import the useFavorites hook
+import { useFavorites } from '@/contexts/FavoriteContext'; 
 
 // MOCK IMAGE IMPORTS (Unchanged)
 import productHeadphones from '@/assets/product-headphones.jpg';
@@ -32,7 +35,7 @@ interface DisplayProduct {
     rating: number;
     reviewCount: number;
     seller: { name: string; rating: number };
-    badge: string;
+    badge?: string; // Made optional as recommendations might not have them
 }
 
 
@@ -44,52 +47,9 @@ const INITIAL_DEAL_COUNT = 4;
 const LOAD_MORE_STEP = 4;
 
 
-// --- Mock data for featured products (Unchanged) ---
-const featuredProducts: DisplayProduct[] = [
-  {
-    id: '1',
-    title: 'Premium Wireless Headphones with Active Noise Cancellation',
-    price: 299.99,
-    originalPrice: 399.99,
-    image: productHeadphones,
-    rating: 4.8,
-    reviewCount: 1247,
-    seller: { name: 'TechZone', rating: 4.9 },
-    badge: 'Bestseller'
-  },
-  {
-    id: '2',
-    title: 'Smart Fitness Watch with Heart Rate Monitor',
-    price: 199.99,
-    originalPrice: 249.99,
-    image: productSmartwatch,
-    rating: 4.6,
-    reviewCount: 892,
-    seller: { name: 'FitTech', rating: 4.7 },
-    badge: 'New'
-  },
-  {
-    id: '3',
-    title: 'Professional Camera Lens 50mm f/1.4',
-    price: 449.99,
-    image: productCameraLens,
-    rating: 4.9,
-    reviewCount: 324,
-    seller: { name: 'PhotoPro', rating: 4.8 },
-    badge: 'Pro Choice'
-  },
-  {
-    id: '4',
-    title: 'Ultra-Thin Gaming Laptop 15.6"',
-    price: 1299.99,
-    originalPrice: 1499.99,
-    image: productGamingLaptop,
-    rating: 4.7,
-    reviewCount: 567,
-    seller: { name: 'GameTech', rating: 4.6 },
-    badge: 'Gaming'
-  }
-];
+// --- Mock data for featured products (REMOVE FOR RECOMMENDATIONS) ---
+// We will keep this static data structure only for mapping simplicity later, but will use the live data.
+// const featuredProducts: DisplayProduct[] = [...] 
 
 
 // 🔑 PRICE FORMATTER (Unchanged)
@@ -100,6 +60,18 @@ const formatRwfPrice = (price: string | number): number => {
 
 
 export default function Homepage() {
+  // ------------------------------------------------------------------
+  // 🌟 NEW STATE/CONTEXT HOOKS
+  // ------------------------------------------------------------------
+  const { 
+    recommendedProducts, 
+    fetchRecommendations, 
+    isRecommendationsLoading 
+  } = useFavorites();
+  
+  // ------------------------------------------------------------------
+  // EXISTING STATE HOOKS (Unchanged)
+  // ------------------------------------------------------------------
   const [loading, setLoading] = useState(true);
   const [deals, setDeals] = useState<DisplayProduct[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -143,21 +115,26 @@ export default function Homepage() {
     }
   }, []);
 
+  // ------------------------------------------------------------------
+  // 2. LIFECYCLE HOOKS
+  // ------------------------------------------------------------------
   useEffect(() => {
     fetchApprovedProducts();
   }, [fetchApprovedProducts]);
 
+  // 🌟 NEW LIFECYCLE HOOK: Fetch recommendations on mount
+  useEffect(() => {
+    // This function checks isLoggedIn internally, ensuring the user is ready.
+    fetchRecommendations();
+  }, [fetchRecommendations]); 
 
   // ------------------------------------------------------------------
-  // 2. DEAL RENDERING LOGIC & HANDLERS
+  // 3. DEAL RENDERING LOGIC & HANDLERS (Unchanged)
   // ------------------------------------------------------------------
   const allDealOfTheDayProducts = deals;
   const visibleDeals = allDealOfTheDayProducts.slice(0, visibleDealCount);
   const hasMoreDeals = visibleDealCount < allDealOfTheDayProducts.length;
   const isExpanded = visibleDealCount > INITIAL_DEAL_COUNT;
-
-  // 🛑 REMOVED unused handleAddToCart, handleToggleWishlist, handleChatWithSeller 
-  // since ProductCard now uses Context Hooks.
 
   const handleLoadMoreDeals = () => {
     if (loading || !hasMoreDeals) return;
@@ -184,6 +161,23 @@ export default function Homepage() {
     }, 300); 
   };
 
+
+  // ------------------------------------------------------------------
+  // 4. HELPER: Maps API Recommendation structure to DisplayProduct structure
+  // ------------------------------------------------------------------
+  const mappedRecommendations: DisplayProduct[] = recommendedProducts.map(p => ({
+    id: p._id,
+    title: p.name,
+    price: formatRwfPrice(p.price),
+    originalPrice: undefined, // Recommendations may not have a fixed sale price
+    image: p.imageUrl1 || 'placeholder.jpg',
+    rating: p.rating || 4.0,
+    reviewCount: p.reviewCount || 0,
+    seller: p.seller || { name: 'Market Seller', rating: 4.5 },
+    badge: 'Recommended', // Consistent badge for recommended items
+  }));
+
+
   return (
     <div className="min-h-screen">
       
@@ -197,30 +191,43 @@ export default function Homepage() {
       {/* Top Picks Section (Unchanged) */}
       <TopPicks />
 
-      {/* Featured Products (Recommended for You) - RENDERED WITHOUT OBSOLETE PROPS */}
-      <section className="py-12 bg-background-secondary">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Recommended for You</h2>
-              <p className="text-muted-foreground">Based on your browsing history and preferences</p>
+      {/* ------------------------------------------------------------------ */}
+      {/* 🌟 RECOMMENDED PRODUCTS (LIVE DATA) */}
+      {/* ------------------------------------------------------------------ */}
+      {mappedRecommendations.length > 0 && (
+        <section className="py-12 bg-background-secondary">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
+                  <Heart className="w-6 h-6 text-primary fill-primary/80" />
+                  Recommended for You
+                </h2>
+                <p className="text-muted-foreground">Based on your wishlist and browsing history</p>
+              </div>
+              <Button variant="outline">
+                View All <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </div>
-            <Button variant="outline">
-              View All <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            
+            {isRecommendationsLoading ? (
+               <div className="flex justify-center items-center py-8">
+                <Loader2 className="w-6 h-6 mr-2 animate-spin text-primary" />
+                <span className="text-muted-foreground">Generating personalized picks...</span>
+               </div>
+            ) : (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    {mappedRecommendations.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        {...product}
+                      />
+                    ))}
+                </div>
+            )}
           </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-                // 🛑 REMOVED: onAddToCart, onToggleWishlist, onChatWithSeller
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* -------------------------------------- */}
       {/* --- Deal of the Day Section (API Data)--- */}
@@ -259,7 +266,6 @@ export default function Homepage() {
                   <ProductCard
                     key={product.id}
                     {...product}
-                    // 🛑 REMOVED: onAddToCart, onToggleWishlist, onChatWithSeller
                   />
                 ))}
               </div>

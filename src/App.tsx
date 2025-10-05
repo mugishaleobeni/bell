@@ -8,8 +8,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext"; 
 
-// 🛑 NEW IMPORT: Import the CartProvider
+// 🛑 EXISTING IMPORT
 import { CartProvider } from "@/contexts/CartContext"; 
+// 🌟 NEW IMPORT: Import the FavoriteProvider 🌟
+import { FavoriteProvider } from "@/contexts/FavoriteContext"; 
 
 // 🚀 Dynamic Imports (Code Splitting)
 import React, { lazy, Suspense } from 'react'; 
@@ -27,7 +29,8 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const SellPage = lazy(() => import("./pages/SellPage"));
-const Favorites = lazy(() => import("./pages/FavouritePage"));
+// NOTE: Ensure this path is correct, should be './pages/Favorites' if file is named Favorites.tsx
+const Favorites = lazy(() => import("./pages/FavouritePage")); 
 const OrderPage = lazy(() => import("./pages/OrderPage"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -42,51 +45,52 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      {/* 🛑 CRITICAL FIX: Nest the CartProvider inside AuthProvider. 
-             This makes both Auth and Cart contexts available to the entire app. */}
       <CartProvider>
-        <ThemeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              {/* WRAP THE ENTIRE ROUTE STRUCTURE WITH SUSPENSE */}
-              <Suspense fallback={<div className="p-8 text-center text-lg">Loading Application...</div>}>
-                <Routes>
-                  {/* Auth Routes without Navbar */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  
-                  {/* Main Routes with Navbar */}
-                  <Route path="*" element={
-                    <div className="min-h-screen flex flex-col">
-                      <Navbar />
-                      <main className="flex-1">
-                        <Routes>
-                          <Route path="/" element={<Homepage />} />
-                          
-                          {/* All dynamically loaded pages */}
-                          <Route path="/sell" element={<SellPage/>} />
-                          <Route path="/wishlist" element={<Favorites/>} />
-                          <Route path="/orders" element={<OrderPage/>} />
-                          <Route path="/messages" element={<ChatPage/>} /> 
-                          <Route path="/cart" element={<Cart/>}/>
-                          <Route path="/checkout" element={<Checkout/>}/>
-                          <Route path="/profile/settings" element={<ProfileSettings/>} />
-                          <Route path="/product/:productId" element={<ProductDetailPage />} />
+        {/* 🌟 CRITICAL FIX: Nest the FavoriteProvider here 🌟 */}
+        <FavoriteProvider>
+          <ThemeProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                {/* WRAP THE ENTIRE ROUTE STRUCTURE WITH SUSPENSE */}
+                <Suspense fallback={<div className="p-8 text-center text-lg">Loading Application...</div>}>
+                  <Routes>
+                    {/* Auth Routes without Navbar */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    
+                    {/* Main Routes with Navbar */}
+                    <Route path="*" element={
+                      <div className="min-h-screen flex flex-col">
+                        <Navbar />
+                        <main className="flex-1">
+                          <Routes>
+                            <Route path="/" element={<Homepage />} />
+                            
+                            {/* All dynamically loaded pages */}
+                            <Route path="/sell" element={<SellPage/>} />
+                            <Route path="/wishlist" element={<Favorites/>} />
+                            <Route path="/orders" element={<OrderPage/>} />
+                            <Route path="/messages" element={<ChatPage/>} /> 
+                            <Route path="/cart" element={<Cart/>}/>
+                            <Route path="/checkout" element={<Checkout/>}/>
+                            <Route path="/profile/settings" element={<ProfileSettings/>} />
+                            <Route path="/product/:productId" element={<ProductDetailPage />} />
 
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </main>
-                      <Footer />
-                      <ChatBot />
-                    </div>
-                  } />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </TooltipProvider>
-        </ThemeProvider>
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </main>
+                        <Footer />
+                        <ChatBot />
+                      </div>
+                    } />
+                  </Routes>
+                </Suspense>
+              </BrowserRouter>
+            </TooltipProvider>
+          </ThemeProvider>
+        </FavoriteProvider>
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>
