@@ -2,52 +2,49 @@
 import React, { useState, useEffect, useCallback } from 'react'; 
 import { HeroSection } from '@/components/home/HeroSection';
 import TopPicks from '@/components/home/TopPicks'; 
-import { ProductCard } from '@/components/product/ProductCard';
+// 🛑 IMPORTANT: Use the correct path for ProductCard if it's not '@/components/product/ProductCard'
+import { ProductCard } from '@/components/product/ProductCard'; 
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Zap, TrendingUp, Award, Loader2, Minimize2 } from 'lucide-react';
 
-// ⚠️ MOCK IMAGE IMPORTS:
-// NOTE: These mock imports are left for the 'Featured Products' section, 
-// but the 'Deal of the Day' section will now use URLs from the API.
+// MOCK IMAGE IMPORTS (Unchanged)
 import productHeadphones from '@/assets/product-headphones.jpg';
 import productSmartwatch from '@/assets/product-smartwatch.jpg';
 import productCameraLens from '@/assets/product-camera-lens.jpg';
 import productGamingLaptop from '@/assets/product-gaming-laptop.jpg';
 
 
-// 🔑 NEW INTERFACE: Defines the structure of products fetched from the public API
+// 🔑 NEW INTERFACE: Defines the structure of products fetched from the public API (Unchanged)
 interface ApprovedProduct {
     _id: string; 
-    name: string; // The MongoDB field is often 'name' or 'title'
+    name: string;
     price: string | number;
     imageUrl1: string;
-    // Add other fields you need, like 'category', 'description' if you fetch them
 }
 
-// Interface for use in ProductCard (combining mock fields and real data)
+// Interface for use in ProductCard (Unchanged)
 interface DisplayProduct {
     id: string;
     title: string;
     price: number;
     originalPrice?: number;
-    image: string; // This will be imageUrl1
-    rating: number; // Mocked for now
-    reviewCount: number; // Mocked for now
-    seller: { name: string; rating: number }; // Mocked for now (public API doesn't return seller name)
-    badge: string; // Mocked for now
+    image: string;
+    rating: number;
+    reviewCount: number;
+    seller: { name: string; rating: number };
+    badge: string;
 }
 
 
 // ⚠️ API BASE URL - Must match your backend
 const API_BASE_URL = "https://beltrandsmarketbackend.onrender.com/api/products";
 
-// Initial constants
+// Initial constants (Unchanged)
 const INITIAL_DEAL_COUNT = 4;
 const LOAD_MORE_STEP = 4;
 
 
-// --- Mock data for featured products (using mock data structure) ---
-// This section is NOT fetched from the API and remains as is, using static imports.
+// --- Mock data for featured products (Unchanged) ---
 const featuredProducts: DisplayProduct[] = [
   {
     id: '1',
@@ -60,7 +57,6 @@ const featuredProducts: DisplayProduct[] = [
     seller: { name: 'TechZone', rating: 4.9 },
     badge: 'Bestseller'
   },
-  // ... (rest of the featured products)
   {
     id: '2',
     title: 'Smart Fitness Watch with Heart Rate Monitor',
@@ -96,33 +92,27 @@ const featuredProducts: DisplayProduct[] = [
 ];
 
 
-// 🔑 PRICE FORMATTER
+// 🔑 PRICE FORMATTER (Unchanged)
 const formatRwfPrice = (price: string | number): number => {
-    // Converts the price string/number to a float, or defaults to 0
     const rawPrice = parseFloat(String(price));
-    // NOTE: ProductCard expects a number for the price, so we just return the raw number.
-    // The formatting (Rwf symbol, commas) should be done inside the ProductCard component
-    // or we must adjust the ProductCard interface to accept a formatted string.
-    // For now, let's assume ProductCard accepts a number and we will use the raw price.
     return isNaN(rawPrice) ? 0 : rawPrice;
 };
 
 
 export default function Homepage() {
-  const [loading, setLoading] = useState(true); // Start loading immediately for deals
-  const [deals, setDeals] = useState<DisplayProduct[]>([]); // State for fetched deals
+  const [loading, setLoading] = useState(true);
+  const [deals, setDeals] = useState<DisplayProduct[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [visibleDealCount, setVisibleDealCount] = useState(INITIAL_DEAL_COUNT);
 
   
   // ------------------------------------------------------------------
-  // 1. FETCH APPROVED PRODUCTS
+  // 1. FETCH APPROVED PRODUCTS (Unchanged)
   // ------------------------------------------------------------------
   const fetchApprovedProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // 🔑 Use the new public endpoint
       const response = await fetch(`${API_BASE_URL}/public`); 
 
       if (!response.ok) {
@@ -131,24 +121,23 @@ export default function Homepage() {
 
       const productsData: ApprovedProduct[] = await response.json();
 
-      // Map API data (ApprovedProduct) to the format expected by ProductCard (DisplayProduct)
       const mappedDeals: DisplayProduct[] = productsData.map((p, index) => ({
           id: p._id,
-          title: p.name, // Use 'name' from the API response
-          price: formatRwfPrice(p.price), // Convert to number
-          originalPrice: formatRwfPrice(p.price) * 1.2, // Mock a sale price (20% discount)
-          image: p.imageUrl1 || 'placeholder.jpg', // Use imageUrl1
-          rating: 4.5, // Mock data
-          reviewCount: Math.floor(Math.random() * 500) + 50, // Mock data
-          seller: { name: 'Verified Seller', rating: 4.8 }, // Mock data
-          badge: index % 2 === 0 ? 'Deal' : 'Hot Deal', // Mock data
+          title: p.name,
+          price: formatRwfPrice(p.price),
+          originalPrice: formatRwfPrice(p.price) * 1.2,
+          image: p.imageUrl1 || 'placeholder.jpg',
+          rating: 4.5,
+          reviewCount: Math.floor(Math.random() * 500) + 50,
+          seller: { name: 'Verified Seller', rating: 4.8 },
+          badge: index % 2 === 0 ? 'Deal' : 'Hot Deal',
       }));
 
       setDeals(mappedDeals);
     } catch (err: any) {
       console.error("Error fetching approved products:", err);
       setError("Could not load Deal of the Day. Please try again.");
-      setDeals([]); // Use empty array on error
+      setDeals([]);
     } finally {
       setLoading(false);
     }
@@ -160,24 +149,15 @@ export default function Homepage() {
 
 
   // ------------------------------------------------------------------
-  // 2. DEAL RENDERING LOGIC
+  // 2. DEAL RENDERING LOGIC & HANDLERS
   // ------------------------------------------------------------------
-  const allDealOfTheDayProducts = deals; // Use the fetched state for deals
+  const allDealOfTheDayProducts = deals;
   const visibleDeals = allDealOfTheDayProducts.slice(0, visibleDealCount);
   const hasMoreDeals = visibleDealCount < allDealOfTheDayProducts.length;
   const isExpanded = visibleDealCount > INITIAL_DEAL_COUNT;
 
-  const handleAddToCart = (productId: string) => {
-    console.log('Add to cart:', productId);
-  };
-
-  const handleToggleWishlist = (productId: string) => {
-    console.log('Toggle wishlist:', productId);
-  };
-
-  const handleChatWithSeller = (productId: string) => {
-    console.log('Chat with seller:', productId);
-  };
+  // 🛑 REMOVED unused handleAddToCart, handleToggleWishlist, handleChatWithSeller 
+  // since ProductCard now uses Context Hooks.
 
   const handleLoadMoreDeals = () => {
     if (loading || !hasMoreDeals) return;
@@ -188,7 +168,7 @@ export default function Homepage() {
     setTimeout(() => {
       setVisibleDealCount(prevCount => Math.min(prevCount + LOAD_MORE_STEP, allDealOfTheDayProducts.length));
       setLoading(false);
-    }, 500); // Reduced delay
+    }, 500); 
   };
 
   const handleLoadLessDeals = () => {
@@ -201,23 +181,23 @@ export default function Homepage() {
       setVisibleDealCount(INITIAL_DEAL_COUNT); 
       setLoading(false);
       document.getElementById('deal-of-the-day')?.scrollIntoView({ behavior: 'smooth' });
-    }, 300); // Short delay for collapsing
+    }, 300); 
   };
 
   return (
     <div className="min-h-screen">
       
-      {/* Hero Section */}
+      {/* Hero Section (Unchanged) */}
       <div className="px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <HeroSection />
         </div>
       </div>
 
-      {/* Top Picks Section */}
+      {/* Top Picks Section (Unchanged) */}
       <TopPicks />
 
-      {/* Featured Products (Recommended for You) - Remains static */}
+      {/* Featured Products (Recommended for You) - RENDERED WITHOUT OBSOLETE PROPS */}
       <section className="py-12 bg-background-secondary">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
@@ -235,9 +215,7 @@ export default function Homepage() {
               <ProductCard
                 key={product.id}
                 {...product}
-                onAddToCart={() => handleAddToCart(product.id)}
-                onToggleWishlist={() => handleToggleWishlist(product.id)}
-                onChatWithSeller={() => handleChatWithSeller(product.id)}
+                // 🛑 REMOVED: onAddToCart, onToggleWishlist, onChatWithSeller
               />
             ))}
           </div>
@@ -259,7 +237,7 @@ export default function Homepage() {
             </Button>
           </div>
           
-          {/* Loading/Error States */}
+          {/* Loading/Error States (Unchanged) */}
           {loading && (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="w-8 h-8 mr-2 animate-spin text-primary" />
@@ -274,16 +252,14 @@ export default function Homepage() {
             </div>
           )}
 
-          {/* Display Deals */}
+          {/* Display Deals - RENDERED WITHOUT OBSOLETE PROPS */}
           {!loading && !error && visibleDeals.length > 0 && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 {visibleDeals.map((product) => (
                   <ProductCard
                     key={product.id}
                     {...product}
-                    onAddToCart={() => handleAddToCart(product.id)}
-                    onToggleWishlist={() => handleToggleWishlist(product.id)}
-                    onChatWithSeller={() => handleChatWithSeller(product.id)}
+                    // 🛑 REMOVED: onAddToCart, onToggleWishlist, onChatWithSeller
                   />
                 ))}
               </div>
@@ -295,11 +271,11 @@ export default function Homepage() {
              </div>
           )}
 
-          {/* Action Buttons Container */}
+          {/* Action Buttons Container (Unchanged) */}
           {deals.length > 0 && (
             <div className="mt-10 flex justify-center space-x-4">
               
-              {/* Load Less Button (Visible when expanded) */}
+              {/* Load Less Button */}
               {isExpanded && (
                 <Button
                   onClick={handleLoadLessDeals}
@@ -312,7 +288,7 @@ export default function Homepage() {
                 </Button>
               )}
 
-              {/* Load More Button (Visible when there are more deals) */}
+              {/* Load More Button */}
               {hasMoreDeals && (
                 <Button
                   onClick={handleLoadMoreDeals}
@@ -338,7 +314,7 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* --- Stats Section --- */}
+      {/* --- Stats Section (Unchanged) --- */}
      <section className="py-16 bg-gradient-to-r from-[#87520c] to-[#ed9707]">
         <div className="max-w-7xl mx-auto px-4">
           <div className=" rounded-2xl p-4  bg-white/30 backdrop-blur-lg border border-white/20">

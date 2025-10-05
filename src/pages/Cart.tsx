@@ -1,76 +1,89 @@
-import React, { useState } from 'react';
+// File: src/pages/Cart.tsx
+
+import React, { useEffect } from 'react';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useCart } from '@/contexts/CartContext'; 
 
-const initialCartItems = [
-  {
-    id: 1,
-    name: 'Premium Wireless Headphones',
-    price: 45000,
-    quantity: 1,
-    image: '/placeholder.svg',
-    seller: 'Audio Tech Store'
-  },
-  {
-    id: 2,
-    name: 'Smart Watch Pro',
-    price: 85000,
-    quantity: 2,
-    image: '/placeholder.svg',
-    seller: 'Gadget Hub'
-  },
-  {
-    id: 3,
-    name: 'Camera Lens 50mm',
-    price: 120000,
-    quantity: 1,
-    image: '/placeholder.svg',
-    seller: 'Camera World'
-  }
-];
+// NOTE: The ProductInCart interface matches the CartItem from CartContext.tsx
 
 export default function Cart() {
-  const [cartItems, setCartItems] = useState(initialCartItems);
+  const { 
+    cartItems, 
+    fetchCartItems, 
+    updateCartItemQuantity, 
+    removeCartItem, 
+    isLoading,
+    cartCount 
+  } = useCart();
+  
   const { toast } = useToast();
 
-  const updateQuantity = (id: number, change: number) => {
-    setCartItems(cartItems.map(item => {
-      if (item.id === id) {
-        const newQuantity = Math.max(1, item.quantity + change);
-        return { ...item, quantity: newQuantity };
-      }
-      return item;
-    }));
+  // 1. HELPER FUNCTION: Correctly constructs the image URL
+  const getImageUrl = (path: string | undefined): string => {
+    if (!path) {
+      return 'https://via.placeholder.com/150?text=No+Image';
+    }
+    
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    
+    // Assuming your Flask server is serving static files from 'http://127.0.0.1:5000/static'
+    return `https://beltrandsmarketbackend.onrender.com/static${path}`;
   };
 
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter(item => item.id !== id));
-    toast({
-      title: "Item removed",
-      description: "Product has been removed from your cart."
-    });
+
+  useEffect(() => {
+    fetchCartItems(); 
+  }, [fetchCartItems]);
+
+  const handleUpdateQuantity = async (itemId: string, currentQuantity: number, change: number) => {
+    const newQuantity = currentQuantity + change;
+    if (newQuantity < 1) return; 
+    // itemId here will be item.product_id
+    await updateCartItemQuantity(itemId, newQuantity);
+    toast({ title: "Quantity updated", description: `Item quantity changed to ${newQuantity}.`, duration: 2000 });
   };
 
+  const handleRemoveItem = async (itemId: string, name: string) => {
+    // itemId here will be item.product_id
+    await removeCartItem(itemId);
+    toast({ title: "Item removed", description: `${name} has been removed from your cart.` });
+  };
+
+
+  // --- Calculations ---
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shipping = 5000;
   const total = subtotal + shipping;
+  const isCartEmpty = cartItems.length === 0;
+
+  if (isLoading && isCartEmpty) {
+    return (
+      <div className="min-h-screen pt-24 flex justify-center items-center">
+        <p>Loading cart...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-12 px-4">
       <div className="max-w-7xl mx-auto">
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
             <ShoppingCart className="w-8 h-8 text-[#ff902b]" />
             Shopping Cart
           </h1>
           <p className="text-muted-foreground">
-            {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in your cart
+            {cartCount} {cartCount === 1 ? 'item' : 'items'} in your cart
           </p>
         </div>
 
-        {cartItems.length === 0 ? (
+        {isCartEmpty ? (
           <div className="glass-card p-12 text-center">
             <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-2xl font-semibold mb-2">Your cart is empty</h2>
@@ -83,11 +96,11 @@ export default function Cart() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
-                <div key={item.id} className="glass-card p-4 flex gap-4">
+              {cartItems.map((item) => ( 
+                <div key={item._id} className="glass-card p-4 flex gap-4"> 
                   <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
                     <img 
-                      src={item.image} 
+                      src={getImageUrl(item.image)} 
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
@@ -106,7 +119,9 @@ export default function Cart() {
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 p-0 hover:bg-destructive/20"
-                      onClick={() => removeItem(item.id)}
+                      // 🛑 FIX: Use item.product_id for removal
+                      onClick={() => handleRemoveItem(item.product_id, item.name)}
+                      disabled={isLoading}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -116,8 +131,9 @@ export default function Cart() {
                         variant="ghost"
                         size="sm"
                         className="h-7 w-7 p-0"
-                        onClick={() => updateQuantity(item.id, -1)}
-                        disabled={item.quantity <= 1}
+                        // 🛑 FIX: Use item.product_id for decrement
+                        onClick={() => handleUpdateQuantity(item.product_id, item.quantity, -1)} 
+                        disabled={item.quantity <= 1 || isLoading}
                       >
                         <Minus className="w-3 h-3" />
                       </Button>
@@ -126,7 +142,9 @@ export default function Cart() {
                         variant="ghost"
                         size="sm"
                         className="h-7 w-7 p-0"
-                        onClick={() => updateQuantity(item.id, 1)}
+                        // 🛑 FIX: Use item.product_id for increment
+                        onClick={() => handleUpdateQuantity(item.product_id, item.quantity, 1)} 
+                        disabled={isLoading}
                       >
                         <Plus className="w-3 h-3" />
                       </Button>
@@ -143,7 +161,7 @@ export default function Cart() {
 
                 <div className="space-y-3 mb-4">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="text-muted-foreground">Subtotal ({cartCount} items)</span>
                     <span className="font-semibold">{subtotal.toLocaleString()} RWF</span>
                   </div>
                   <div className="flex justify-between">
