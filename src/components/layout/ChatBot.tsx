@@ -69,7 +69,14 @@ const STATIC_RESPONSES = {
     'can you assist with business solutions': "Yes, I can provide information and support related to Beltrand Market’s business solutions. Ask away!",
     'how do I reach mugisha leobeni': "You can contact Mugisha Leobeni on WhatsApp at +0798009334 or find him on Instagram as leobeni.",
     'what’s new with beltrand market': "Beltrand Market is always innovating! For the latest updates, contact Mugisha Leobeni at +0798009334.",
-    'can you help with tech support': "I can offer basic tech support advice related to Beltrand Market’s platforms. For detailed help, reach out to Mugisha Leobeni at +0798009334."
+    'can you help with tech support': "I can offer basic tech support advice related to Beltrand Market’s platforms. For detailed help, reach out to Mugisha Leobeni at +0798009334.",
+    'who makes ':"Beltrand Market is made by a team of dedicated engineers and developers, including Mugisha Leobeni.",
+    'who is behind ':"Behind Beltrand Market is a passionate team of developers and innovators, including Mugisha Leobeni.",
+    'what is the mission of beltrand market': "Beltrand Market’s mission is to create innovative digital solutions that empower users and businesses alike.",
+    'what values does beltrand market uphold': "Beltrand Market values innovation, user-centric design, and integrity in all its endeavors.",
+    'how can beltrand market help me': "Beltrand Market offers a range of digital solutions designed to meet your needs. Ask me how I can assist you!",
+    
+
 };
 
 
