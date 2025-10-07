@@ -15,12 +15,14 @@ import { useFavorites } from '@/contexts/FavoriteContext';
 interface ProductCardProps {
   id: string;
   title: string;
-  price: number;
-  originalPrice?: number;
+  // 🎯 FIX: Changed price and originalPrice to potentially be number | undefined | null
+  price: number | undefined | null; 
+  originalPrice?: number | undefined | null;
   image: string;
   rating: number;
   reviewCount: number;
-  seller: { name: string; rating: number; };
+  // 🎯 FIX: Make the seller object itself nullable to match backend safety checks
+  seller: { name: string; rating: number; } | undefined | null; 
   badge?: string;
   // 🛑 REMOVED: These props are now handled internally by useFavorites
   // isWishlisted?: boolean;
@@ -70,7 +72,12 @@ export function ProductCard({
   // 🛑 NEW: Get the current favorited status from the context
   const isWishlisted = isProductFavorited(id);
   
-  const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+  // Safely calculate discount only if both prices are valid numbers
+  const safePrice = Number(price);
+  const safeOriginalPrice = Number(originalPrice);
+  const discount = (safePrice > 0 && safeOriginalPrice > safePrice) 
+    ? Math.round(((safeOriginalPrice - safePrice) / safeOriginalPrice) * 100) 
+    : 0;
   
   // 🛑 NEW: Handler for the Wishlist button
   const handleToggleFavorite = () => {
@@ -172,7 +179,7 @@ export function ProductCard({
         </div>
       </div>
 
-      {/* Product Info (unchanged) */}
+      {/* Product Info (UPDATED PRICE AND SELLER LOGIC) */}
       <div className="p-4 space-y-2">
         <Link to={`/product/${id}`}> 
           <h3 className="font-medium text-sm line-clamp-2 hover:text-primary transition-colors">
@@ -184,16 +191,30 @@ export function ProductCard({
           <span className="text-xs text-muted-foreground">({reviewCount})</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-bold text-lg text-primary">Rwf{price.toFixed(2)}</span>
-          {originalPrice && (
-            <span className="text-sm text-muted-foreground line-through">Rwf{originalPrice.toFixed(2)}</span>
+          {/* FIX 1: Current Price Check */}
+          <span className="font-bold text-lg text-primary">
+            Rwf
+            {/* Check if price is not null/undefined/0 before calling toFixed */}
+            {price !== undefined && price !== null && price > 0
+              ? price.toFixed(2) 
+              : '0.00'}
+          </span>
+          
+          {/* FIX 2: Original Price Check */}
+          {originalPrice !== undefined && originalPrice !== null && originalPrice > 0 && (
+            <span className="text-sm text-muted-foreground line-through">
+              Rwf{originalPrice.toFixed(2)}
+            </span>
           )}
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>by {seller.name}</span>
+          {/* 🎯 FINAL FIX: Check if seller object exists before accessing its properties */}
+          <span>by {seller ? seller.name : 'Unknown Seller'}</span>
+          
           <div className="flex items-center gap-1">
             <Star className="w-3 h-3 text-warning fill-warning" /> 
-            <span>{seller.rating}</span>
+            {/* Check if seller exists before accessing rating */}
+            <span>{seller ? seller.rating : 'N/A'}</span>
           </div>
         </div>
       </div>

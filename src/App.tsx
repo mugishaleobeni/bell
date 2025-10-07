@@ -24,6 +24,7 @@ import Homepage from "./pages/Homepage";
 import NotFound from "./pages/NotFound"; 
 import ProfileSettings from "./pages/ProfileSettings";
 import ProductDetailPage from "./pages/ProductDetailPage";
+import { CategoryPage } from "./pages/CategoryPage";
 
 // 🚀 Dynamic Imports (Code Splitting)
 const Login = lazy(() => import("./pages/Login"));
@@ -77,7 +78,10 @@ const App = () => (
                             <Route path="/checkout" element={<Checkout/>}/>
                             <Route path="/profile/settings" element={<ProfileSettings/>} />
                             <Route path="/product/:productId" element={<ProductDetailPage />} />
-
+                            <Route 
+                                    path="category/:categoryName/:subCategoryName" 
+                                    element={<CategoryPage/>} 
+                                />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </main>

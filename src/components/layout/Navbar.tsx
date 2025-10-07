@@ -28,6 +28,23 @@ const categories = [
   { name: 'Sports & Fitness', subcategories: ['Exercise Equipment', 'Sportswear', 'Outdoor Gear', 'Supplements', 'Yoga & Pilates'] }
 ];
 
+
+// Helper function to create a safe, URL-encoded slug
+const createSlug = (name: string): string => {
+  // 1. Convert to lowercase
+  const slug = name.toLowerCase();
+  
+  // 2. Encode reserved characters (like '&' -> '%26')
+  // This converts spaces to %20 (e.g., "mobile phones" -> "mobile%20phones")
+  const encodedSlug = encodeURIComponent(slug);
+  
+  // 3. 🎯 CRITICAL FIX: Replace the encoded space (%20) with a hyphen (-)
+  // This is what makes the URL a clean slug (e.g., "mobile-phones")
+  // We also handle potential multiple spaces just in case.
+  return encodedSlug
+    .replace(/%20/g, '-') // Replace the encoded space with a hyphen
+    .replace(/\s+/g, '-'); // Ensure any remaining literal spaces are also hyphens
+};
 // ------------------------------------------------------------------
 // NEW COMPONENT: MobileCategoryMenu
 // ------------------------------------------------------------------
@@ -78,7 +95,7 @@ const MobileCategoryMenu: React.FC<MobileCategoryMenuProps> = ({ categories, clo
                             {category.subcategories.map((sub) => (
                                 <Link
                                     key={sub}
-                                    to={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}/${sub.toLowerCase().replace(/\s+/g, '-')}`}
+                                    to={`/category/${createSlug(category.name)}/${createSlug(sub)}`}
                                     className="block text-sm text-muted-foreground px-2 py-1 hover:text-[#ff902b] hover:bg-hover-orange/10 rounded-sm transition-colors"
                                     onClick={closeMenu}
                                 >
@@ -230,13 +247,14 @@ export function Navbar() {
                       {categories.map((category) => (
                         <div key={category.name} className="space-y-2">
                           <div className="font-semibold text-sm px-2 py-1">
-                            <Link to={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-[#ff902b]">
+                            <Link to={`/category/${createSlug(category.name)}`} className="hover:text-[#ff902b]">
                               {category.name}
                             </Link>
                           </div>
                           {category.subcategories.map((sub) => (
                             <div key={sub} className="text-sm text-muted-foreground px-2 py-1 hover:text-[#ff902b] hover:bg-hover-orange/10 rounded">
-                              <Link to={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}/${sub.toLowerCase().replace(/\s+/g, '-')}`}>
+                              <Link to={`/category/${createSlug(category.name)}/${createSlug(sub)}`}>
+
                                 {sub}
                               </Link>
                             </div>
@@ -393,7 +411,7 @@ export function Navbar() {
                         <Button variant="glass-primary" size="sm" className="relative hover:bg-hover-orange/10 hover:text-hover-orange gap-1">
                           <ShoppingCart className="w-4 h-4" />
                           <span className="text-sm hidden sm:inline">Cart</span>
-                          <Badge className="absolute -top-1 -right-1 h-5 w-5 text-xs bg-destructive text-destructive-foreground">5</Badge>
+                          
                         </Button>
                       </DropdownMenuTrigger>
                     </TooltipTrigger>
@@ -612,7 +630,7 @@ export function Navbar() {
                 </Link>
                 <Link to="/cart" className="block" onClick={closeMobileMenu}>
                   <Button variant="glass-primary" size="sm" className="w-full justify-start hover:bg-hover-orange/10 hover:text-hover-orange">
-                    <ShoppingCart className="w-4 h-4 mr-2" /> Cart (5)
+                    <ShoppingCart className="w-4 h-4 mr-2" /> Cart 
                   </Button>
                 </Link>
               </div>
